@@ -1,8 +1,8 @@
-const apiRoutes = require('./routes/apiRoutes');
 const db = require('./db/connection.js');
+const main = require('./utils/inquirer');
 
 db.connect(err => {
     if (err) throw err;
     console.log('Database connected.');
-    // Start Process here
+    main();
 });
