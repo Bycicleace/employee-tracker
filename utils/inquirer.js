@@ -1,3 +1,5 @@
+const db = require('../db/connection');
+const cTable = require('console.table');
 const inquirer = require('inquirer');
 const {
     sqlGetAllEmployees,
@@ -66,17 +68,35 @@ function Tracker() {
     };
 
     Tracker.prototype.viewAllDepartments = function() {
-        console.log("made it to Departments");
+        db.query(sqlGetAllDepartments, (err, data) => {
+            if (!err) {
+                console.table(data);
+            } else {
+                console.error(err);
+            }
+        });
         return this.mainMenu();
     };
 
     Tracker.prototype.viewAllRoles = function() {
-        console.log("made it to Roles!");
+        db.query(sqlGetAllRoles, (err, data) => {
+            if (!err) {
+                console.table(data);
+            } else {
+                console.error(err);
+            }
+        });
         return this.mainMenu();
     };
 
     Tracker.prototype.viewAllEmployees = function() {
-        console.log('made it to employees');
+        db.query(sqlGetAllEmployees, (err, data) => {
+            if (!err) {
+                console.table(data)
+            } else {
+                console.error(err);
+            }
+        })
         return this.mainMenu();
     };
 

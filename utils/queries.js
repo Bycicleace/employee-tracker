@@ -4,9 +4,9 @@ SELECT
   employee.first_name,
   employee.last_name,
   emp_role.title,
-  department.name,
+  department.name AS department,
   emp_role.salary,
-  CONCAT(e2.first_name, ' ', e2.last_name) as manager
+  CONCAT(e2.first_name, ' ', e2.last_name) AS manager
 FROM
   employee
   LEFT JOIN emp_role ON emp_role.id = employee.emp_role_id
@@ -20,9 +20,9 @@ SELECT
   employee.first_name,
   employee.last_name,
   emp_role.title,
-  department.name,
+  department.name AS department,
   emp_role.salary,
-  CONCAT(e2.first_name, ' ', e2.last_name) as manager
+  CONCAT(e2.first_name, ' ', e2.last_name) AS manager
 FROM
   employee
   LEFT JOIN emp_role ON emp_role.id = employee.emp_role_id
