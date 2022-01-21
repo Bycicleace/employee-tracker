@@ -13,7 +13,7 @@ const {
 } = require('./queries');
 
 function Tracker() {
-    Tracker.prototype.mainMenu = function() {
+    Tracker.prototype.mainMenu = async function() {
         inquirer
             .prompt({
                 type: 'list',
@@ -26,21 +26,22 @@ function Tracker() {
                     'Add a Department',
                     'Add a Role',
                     'Add an Employee',
-                    'Update Employee Role'
+                    'Update Employee Role',
+                    'Quit'
                 ]
             })
-            .then(({ action }) => {
+            .then(async ({ action }) => {
                 switch (action) {
                     case 'View All Departments':
-                        this.viewAllDepartments();
+                        await this.viewAll(sqlGetAllDepartments);
                         break;
                 
                     case 'View All Roles':
-                        this.viewAllRoles();
+                        await this.viewAll(sqlGetAllRoles);
                         break;
                     
                     case 'View All Employees':
-                        this.viewAllEmployees();
+                        await this.viewAll(sqlGetAllEmployees);
                         break;
 
                     case 'Add a Department':
@@ -59,6 +60,10 @@ function Tracker() {
                         this.updateEmployeeRole();
                         break;
 
+                    case 'Quit':
+                        db.end();
+                        break;
+
                     default:
                         console.log("Bad choice, try again");
                         this.mainMenu();
@@ -67,43 +72,58 @@ function Tracker() {
             })
     };
 
-    Tracker.prototype.viewAllDepartments = function() {
-        db.query(sqlGetAllDepartments, (err, data) => {
-            if (!err) {
-                console.table(data);
-            } else {
-                console.error(err);
-            }
-        });
-        return this.mainMenu();
-    };
-
-    Tracker.prototype.viewAllRoles = function() {
-        db.query(sqlGetAllRoles, (err, data) => {
-            if (!err) {
-                console.table(data);
-            } else {
-                console.error(err);
-            }
-        });
-        return this.mainMenu();
-    };
-
-    Tracker.prototype.viewAllEmployees = function() {
-        db.query(sqlGetAllEmployees, (err, data) => {
-            if (!err) {
-                console.table(data)
-            } else {
-                console.error(err);
-            }
+    Tracker.prototype.viewAll = async function(sql) {
+        return new Promise((resolve, reject) => {
+            db.query(sql, (err, data) => {
+                if (!err) {
+                    resolve(data);
+                } else {
+                    reject(err);
+                }
+            });
         })
-        return this.mainMenu();
+        .then(data => {
+            console.table(data);
+            this.mainMenu();
+        })
+        .catch(err => {
+            console.error(err);
+        });
     };
 
     Tracker.prototype.addDepartment = function() {
-        console.log('adding department...');
-        // Need name
-        return this.mainMenu();
+        // Prompt for New Department name
+        inquirer.prompt({
+            type: 'text',
+            name: 'name',
+            message: 'Enter the new Department name:'
+        })
+        .then(({ name }) => {
+            if (name) {
+                console.log(name);
+                return new Promise((resolve, reject) => {
+                    db.query(sqlCreateDepartment, [name], (err, data) => {
+                        if (!err) {
+                            resolve(data);
+                        } else {
+                            reject(err);
+                        }
+                    })
+                })
+                .then(data => {
+                    console.table(data);
+                    this.mainMenu();
+                })
+                .catch(err => {
+                    console.error(err);
+                })
+            } else {
+                console.log("Invalid name. Returning to main menu...");
+                this.mainMenu();
+            }
+        }).catch(err => {
+            console.error(err);
+        })
     };
 
     Tracker.prototype.addRole = function() {
