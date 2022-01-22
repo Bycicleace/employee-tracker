@@ -33,15 +33,21 @@ function Tracker() {
             .then(async ({ action }) => {
                 switch (action) {
                     case 'View All Departments':
-                        await this.viewAll(sqlGetAllDepartments);
+                        const depts = await this.viewAll(sqlGetAllDepartments);
+                        console.table(depts);
+                        this.mainMenu();
                         break;
                 
                     case 'View All Roles':
-                        await this.viewAll(sqlGetAllRoles);
+                        const roles = await this.viewAll(sqlGetAllRoles);
+                        console.table(roles);
+                        this.mainMenu();
                         break;
                     
                     case 'View All Employees':
-                        await this.viewAll(sqlGetAllEmployees);
+                        const emps = await this.viewAll(sqlGetAllEmployees);
+                        console.table(emps);
+                        this.mainMenu();
                         break;
 
                     case 'Add a Department':
@@ -49,7 +55,7 @@ function Tracker() {
                         break;
                     
                     case 'Add a Role':
-                        this.addRole();
+                        await this.addRole();
                         break;
                     
                     case 'Add an Employee':
@@ -82,10 +88,6 @@ function Tracker() {
                 }
             });
         })
-        .then(data => {
-            console.table(data);
-            this.mainMenu();
-        })
         .catch(err => {
             console.error(err);
         });
@@ -94,29 +96,19 @@ function Tracker() {
     Tracker.prototype.addDepartment = function() {
         // Prompt for New Department name
         inquirer.prompt({
-            type: 'text',
+            type: 'input',
             name: 'name',
             message: 'Enter the new Department name:'
         })
         .then(({ name }) => {
-            if (name) {
-                console.log(name);
+            if (typeof name === 'string') {
                 return new Promise((resolve, reject) => {
                     db.query(sqlCreateDepartment, [name], (err, data) => {
-                        if (!err) {
-                            resolve(data);
-                        } else {
-                            reject(err);
-                        }
+                        !err ? resolve(data) : reject(err);
                     })
                 })
-                .then(data => {
-                    console.table(data);
-                    this.mainMenu();
-                })
-                .catch(err => {
-                    console.error(err);
-                })
+                .then(this.mainMenu())
+                .catch(err => console.error(err));
             } else {
                 console.log("Invalid name. Returning to main menu...");
                 this.mainMenu();
@@ -127,21 +119,158 @@ function Tracker() {
     };
 
     Tracker.prototype.addRole = function() {
-        console.log('adding role...');
-        // need title, salary, and department id
-        return this.mainMenu();
+        inquirer.prompt({
+            type: 'input',
+            name: 'title',
+            message: "Enter the new Role's title: "
+        })
+        .then(({ title }) => {
+            if (title) {
+                inquirer.prompt({
+                    type: 'input',
+                    name: 'salary',
+                    message: "What is the salary of the new Role? "
+                })
+                .then(({ salary }) => {
+                    if (salary) {
+                        this.viewAll(sqlGetAllDepartments)
+                            .then(data => {
+                                let depts = data.map(item => {return {name: item.name, value: item.id}});
+                                inquirer.prompt({
+                                    type: 'list',
+                                    name: "dept_id",
+                                    message: "Select a department for the new Role: ",
+                                    choices: depts
+                                })
+                                .then(({ dept_id }) => {
+                                    if(dept_id) {
+                                        return new Promise((resolve, reject) => {
+                                            db.query(sqlCreateRole, [title, salary, dept_id], (err, data) => {
+                                                !err ? resolve(data) : reject(err);
+                                            })
+                                        })
+                                        .then(this.mainMenu())
+                                        .catch(err => console.error(err));
+                                    } else {
+                                        console.log("Invalid entry. Returning to main menu...");
+                                        this.mainMenu();
+                                    }
+                                })
+                            })
+                    } else {
+                        console.log("Invalid salary. Returning to main menu...");
+                        this.mainMenu();
+                    }
+                })
+            } else {
+                console.log("Invalid title. Returning to main menu...");
+                this.mainMenu();
+            }
+        })
     };
 
     Tracker.prototype.addEmployee = function() {
-        console.log("There's no room!");
-        // need first and last name, role id and manager id
-        return this.mainMenu();
+        inquirer
+            .prompt([
+                {
+                    type: 'input',
+                    name: 'fName',
+                    message: 'Enter the first name of the new Employee: '
+                },
+                {
+                    type: 'input',
+                    name: 'lName',
+                    message: 'Enter the last name of the new Employee: '
+                }
+            ])
+            .then(({ fName, lName }) => {
+                if (fName && lName) {
+                    this.viewAll(sqlGetAllRoles)
+                        .then(data => {
+                            let roles = data.map(item => {return {name: item.title, value: item.id}})
+                            inquirer.prompt({
+                                type: 'list',
+                                name: 'roleId',
+                                message: "Select the new employee's Role: ",
+                                choices: roles
+                            })
+                            .then(({ roleId }) => {
+                                if (roleId) {
+                                    this.viewAll(sqlGetAllEmployees)
+                                        .then(data => {
+                                            let emps = data.map(item => {return {name: item.first_name + ' ' + item.last_name, value: item.id}})
+                                            inquirer.prompt({
+                                                type: 'list',
+                                                name: 'empId',
+                                                message: "Select the new Employee's manager: ",
+                                                choices: emps
+                                            })
+                                            .then(({ empId }) => {
+                                                if (empId) {
+                                                    return new Promise((resolve, reject) => {
+                                                        db.query(sqlCreateEmployee, [fName, lName, roleId, empId], (err, data) => {
+                                                            !err ? resolve(data) : reject(err);
+                                                        })
+                                                    })
+                                                    .then(this.mainMenu())
+                                                    .catch(err => console.error(err));
+                                                } else {
+                                                    console.error("Invalid Department. Returning to main menu...");
+                                                    this.mainMenu();
+                                                }
+                                            })
+                                        })
+                                } else {
+                                    console.error("Invalid Role. Returning to main menu...");
+                                    this.mainMenu();
+                                }
+                            })
+                        })
+                } else {
+                    console.error("Invalid name. Returning to main menu...");
+                    this.mainMenu();
+                }
+            })
     };
 
     Tracker.prototype.updateEmployeeRole = function() {
-        console.log("I'm afraid I can't do that Dave.");
-        // need new role id and employee id
-        return this.mainMenu();
+        // Prompt for employee
+        // Prompt for new role, filter out current role, then display
+        this.viewAll(sqlGetAllEmployees)
+            .then(data => {
+                let emps = data.map(item => {return {name: item.first_name + ' ' + item.last_name, value: item.id}})
+                inquirer.prompt({
+                    type: 'list',
+                    name: 'empId',
+                    message: 'Which Employee would you like to update? ',
+                    choices: emps
+                })
+                .then(({ empId }) => {
+                    this.viewAll(sqlGetAllRoles)
+                        .then(data => {
+                            let roles = data.map(item => {return {name: item.title, value: item.id}})
+                            inquirer.prompt({
+                                type: 'list',
+                                name: 'roleId',
+                                message: 'Please select the new role for this employee',
+                                choices: roles
+                            })
+                            .then(({ roleId }) => {
+                                if (empId && roleId) {
+                                    return new Promise((resolve, reject) => {
+                                        db.query(sqlUpdateEmployeeRole, [roleId, empId], (err, data) => {
+                                            !err ? resolve(data) : reject(err);
+                                        })
+                                    })
+                                    .then(this.mainMenu())
+                                    .catch(err => console.error(err))
+                                } else {
+                                    console.error("Invalid selections. Returning to main menu...");
+                                }
+                            })
+                        })
+                })
+            })
     }
 
 };
