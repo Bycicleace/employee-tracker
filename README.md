@@ -30,7 +30,7 @@ When starting it up, you will be given a menu with the following options:
   - Select the Employee, and the new role and the employee will have the new role assigned.
 
 ## Walkthrough
-For a video walkthrough, [visit this link]()
+For a video walkthrough, [visit this link](https://youtu.be/lrYhUWIPGWM)
 
 ## Author
 Elliott Kvamme, 2022
