@@ -44,7 +44,7 @@ SELECT
   emp_role.id,
   emp_role.title,
   emp_role.salary,
-  department.name
+  department.name as department
 FROM
   emp_role
   LEFT JOIN department on department.id = emp_role.department_id
